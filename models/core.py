@@ -1,6 +1,7 @@
 import uuid
 from abc import ABC
 from datetime import datetime
+from datetime import date
 
 from models.enums import StatusEnum
 
@@ -34,14 +35,6 @@ class Customer(Person):
         self.phone = phone
 
 
-class Company(BaseModel):
-    def __init__(self, id=None, name=None, email=None, phone=None):
-        super().__init__(id)
-        self.name = name
-        self.email = email
-        self.phone = phone
-
-
 class City(BaseModel):
     def __init__(
             self,
@@ -64,13 +57,11 @@ class Package(BaseModel):
             id=None,
             name=None,
             description=None,
-            price=None,
             weight=None
     ):
         super().__init__(id)
         self.name = name
         self.description = description
-        self.price = price
         self.weight = weight
 
 
@@ -80,14 +71,61 @@ class Shipment(BaseModel):
             id=None,
             package: Package = None,
             customer: Customer = None,
-            company: Company = None,
             origin: City = None,
-            destination: City = None
+            destination: City = None,
+            price: float = 0.0
+
     ):
         super().__init__(id)
         self.package = package
         self.customer = customer
-        self.company = company
         self.status = StatusEnum.PENDING
         self.origin = origin
         self.destination = destination
+        self.price = price
+        self.sale_date = datetime.date(datetime.now())
+
+class Company(BaseModel):
+    def __init__(self, id=None, name=None, email=None, phone=None):
+        super().__init__(id)
+        self.name = name
+        self.email = email
+        self.phone = phone
+        self.shipments = []
+
+    def shipments(self):
+        return self.shipments
+
+    def add_shipment(self, shipment: Shipment):
+        self.shipments.append(shipment)
+        return self.shipments
+
+    def remove_shipment(self, shipment: Shipment):
+        self.shipments.remove(shipment)
+        return self.shipments
+
+    def update_shipment(self, shipment: Shipment):
+        self.shipments.remove(shipment)
+        self.shipments.append(shipment)
+        return self.shipments
+
+    def get_shipments_by_date(self, date: date):
+        return [shipment for shipment in self.shipments if shipment.sale_date == date]
+
+    def get_shipments_by_status(self, status: StatusEnum):
+        return [shipment for shipment in self.shipments if shipment.status == status]
+
+    def get_shipments_by_customer(self, customer: Customer):
+        return [shipment for shipment in self.shipments if shipment.customer == customer]
+
+    def get_all_shipments(self):
+        return self.shipments
+
+    def get_total_sales(self):
+        return sum([shipment.price for shipment in self.shipments])
+
+    def report_shipments_and_sales_by_date(self, date_requested: date):
+        shipments = self.get_shipments_by_date(date_requested)
+        total_sales = sum([shipment.price for shipment in shipments])
+        return shipments, total_sales
+
